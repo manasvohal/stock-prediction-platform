@@ -35,18 +35,27 @@ class LSTMModel(nn.Module):
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
         
+        # Enhanced LSTM architecture with bidirectional layers
         self.lstm = nn.LSTM(
             input_dim, hidden_dim, num_layers, 
-            batch_first=True, dropout=dropout
+            batch_first=True, dropout=dropout,
+            bidirectional=True
         )
-        self.fc = nn.Linear(hidden_dim, output_dim)
+        # Adjust for bidirectional output (hidden_dim * 2)
+        self.fc1 = nn.Linear(hidden_dim * 2, hidden_dim)
+        self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(dropout)
+        self.fc2 = nn.Linear(hidden_dim, output_dim)
         
     def forward(self, x):
-        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_dim).to(x.device)
-        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_dim).to(x.device)
+        h0 = torch.zeros(self.num_layers * 2, x.size(0), self.hidden_dim).to(x.device)  # *2 for bidirectional
+        c0 = torch.zeros(self.num_layers * 2, x.size(0), self.hidden_dim).to(x.device)
         
         out, _ = self.lstm(x, (h0, c0))
-        out = self.fc(out[:, -1, :])
+        out = self.fc1(out[:, -1, :])
+        out = self.relu(out)
+        out = self.dropout(out)
+        out = self.fc2(out)
         return out
 
 class MLPredictor:
@@ -166,14 +175,43 @@ class MLPredictor:
         # Calculate technical indicators
         df_copy.loc[:, 'ma7'] = df_copy['close'].rolling(window=7).mean()
         df_copy.loc[:, 'ma21'] = df_copy['close'].rolling(window=21).mean()
+        df_copy.loc[:, 'ma50'] = df_copy['close'].rolling(window=50).mean()
         df_copy.loc[:, 'rsi'] = self._calculate_rsi(df_copy['close'], 14)
         df_copy.loc[:, 'volatility'] = df_copy['close'].rolling(window=20).std()
         
+        # Calculate price momentum
+        df_copy.loc[:, 'price_momentum'] = df_copy['close'].pct_change(5)
+        
+        # Calculate MACD
+        ema12 = df_copy['close'].ewm(span=12, adjust=False).mean()
+        ema26 = df_copy['close'].ewm(span=26, adjust=False).mean()
+        df_copy.loc[:, 'macd'] = ema12 - ema26
+        df_copy.loc[:, 'macd_signal'] = df_copy['macd'].ewm(span=9, adjust=False).mean()
+        
+        # Calculate Bollinger Bands
+        df_copy.loc[:, 'bb_middle'] = df_copy['close'].rolling(window=20).mean()
+        std = df_copy['close'].rolling(window=20).std()
+        df_copy.loc[:, 'bb_upper'] = df_copy['bb_middle'] + (std * 2)
+        df_copy.loc[:, 'bb_lower'] = df_copy['bb_middle'] - (std * 2)
+        df_copy.loc[:, 'bb_width'] = (df_copy['bb_upper'] - df_copy['bb_lower']) / df_copy['bb_middle']
+        
+        # Calculate volume features if available
+        if 'volume' in df_copy.columns:
+            df_copy.loc[:, 'volume_ma7'] = df_copy['volume'].rolling(window=7).mean()
+            df_copy.loc[:, 'volume_change'] = df_copy['volume'].pct_change()
+        
         # Fill NaN values
         df_copy.fillna(method='bfill', inplace=True)
+        df_copy.fillna(0, inplace=True)  # Any remaining NaNs
         
         # Extract features
-        features = df_copy[['close', 'ma7', 'ma21', 'rsi', 'volatility']].values
+        feature_columns = ['close', 'ma7', 'ma21', 'ma50', 'rsi', 'volatility', 
+                          'price_momentum', 'macd', 'macd_signal', 'bb_width']
+        
+        if 'volume' in df_copy.columns:
+            feature_columns.extend(['volume_ma7', 'volume_change'])
+            
+        features = df_copy[feature_columns].values
         
         # Scale features
         scaler = MinMaxScaler(feature_range=(0, 1))
@@ -361,6 +399,10 @@ class MLPredictor:
             prices = df['close'].values.reshape(-1, 1)
             stock_scaler.fit(prices)  # Fit on this specific stock's price range
             
+            # Calculate historical volatility for realistic predictions
+            daily_returns = df['close'].pct_change().dropna()
+            historical_volatility = daily_returns.std()
+            
             # Make prediction
             self.model.eval()
             with torch.no_grad():
@@ -375,6 +417,12 @@ class MLPredictor:
                     # Predict the next price
                     pred = self.model(current_sequence)
                     pred_price = pred.item()
+                    
+                    # Add small random noise based on historical volatility to make predictions more realistic
+                    # The noise gets larger as we predict further into the future
+                    noise_factor = min(0.5, 0.02 * (i + 1))  # Cap at 50% of volatility
+                    noise = np.random.normal(0, historical_volatility * noise_factor)
+                    pred_price = max(0, pred_price * (1 + noise))  # Ensure price doesn't go negative
                     
                     # Store the prediction
                     future_prices.append(pred_price)
@@ -401,6 +449,18 @@ class MLPredictor:
             future_prices_array = np.array(future_prices).reshape(-1, 1)
             future_prices_scaled = stock_scaler.inverse_transform(future_prices_array)
             future_prices = future_prices_scaled.flatten().tolist()
+            
+            # Apply trend-based smoothing to make the forecast more realistic
+            # Calculate the recent trend from the last 20 days of data
+            recent_prices = df['close'].values[-20:]
+            if len(recent_prices) > 1:
+                recent_trend = (recent_prices[-1] / recent_prices[0]) - 1
+                trend_factor = 1 + (recent_trend * 0.5)  # Dampen the trend effect
+                
+                # Apply trend influence that increases over time
+                for i in range(len(future_prices)):
+                    trend_influence = min(0.8, 0.02 * (i + 1))  # Cap at 80%
+                    future_prices[i] = future_prices[i] * (1 + (trend_factor - 1) * trend_influence)
             
             # Calculate metrics
             avg_predicted_price = sum(future_prices) / len(future_prices)
@@ -445,7 +505,7 @@ class MLPredictor:
                 "volatility": volatility,
                 "forecast_days": self.forecast_days,
                 "model_type": "LSTM Neural Network",
-                "features_used": ["price", "moving_averages", "rsi", "volatility"]
+                "features_used": ["price", "moving_averages", "rsi", "volatility", "momentum", "macd", "bollinger_bands"]
             }
             
             return result
@@ -467,29 +527,59 @@ class MLPredictor:
                 ma20 = df['close'].rolling(window=20).mean().iloc[-1]
                 ma50 = df['close'].rolling(window=50).mean().iloc[-1]
                 
-                # Determine trend direction based on this specific stock's data
-                trend = 0
-                if ma20 > ma50:
-                    # Uptrend - calculate percentage based on recent performance
-                    recent_change = (df['close'].iloc[-1] / df['close'].iloc[-20] - 1) * 0.5  # Half of recent 20-day change
-                    trend = max(0.005, min(0.02, recent_change))  # Between 0.5% and 2%
-                elif ma20 < ma50:
-                    # Downtrend - calculate percentage based on recent performance
-                    recent_change = (df['close'].iloc[-1] / df['close'].iloc[-20] - 1) * 0.5  # Half of recent 20-day change
-                    trend = min(-0.005, max(-0.02, recent_change))  # Between -0.5% and -2%
-                
                 # Calculate volatility for more realistic predictions
-                volatility = df['close'].pct_change().std() * 0.5  # Half of historical volatility
+                daily_returns = df['close'].pct_change().dropna()
+                historical_volatility = daily_returns.std()
+                
+                # Determine trend direction based on this specific stock's data
+                recent_change = (df['close'].iloc[-1] / df['close'].iloc[-20] - 1) * 0.5  # Half of recent 20-day change
+                
+                # Calculate trend using exponential smoothing of recent performance
+                alpha = 0.3  # Smoothing factor
+                recent_prices = df['close'].values[-30:]  # Last 30 days
+                
+                # Initialize with first value
+                trend_estimate = 0
+                
+                # Apply exponential smoothing
+                for i in range(1, len(recent_prices)):
+                    daily_change = recent_prices[i] / recent_prices[i-1] - 1
+                    trend_estimate = alpha * daily_change + (1 - alpha) * trend_estimate
+                
+                # Scale the trend to a reasonable daily change
+                trend = trend_estimate * 0.5  # Dampen the trend
+                
+                # Adjust trend based on MA crossover
+                if ma20 > ma50:
+                    # Uptrend - boost the trend slightly
+                    trend = max(0.0005, trend)  # Ensure at least slightly positive
+                elif ma20 < ma50:
+                    # Downtrend - make trend slightly negative
+                    trend = min(-0.0005, trend)  # Ensure at least slightly negative
                 
                 # Generate simple forecast
                 future_prices = []
                 future_dates = []
                 
+                # Start with the last price
+                current_price = last_price
+                
                 for i in range(self.forecast_days):
-                    # Simple compound growth model with some randomness based on volatility
-                    random_factor = 1 + np.random.normal(0, volatility) * 0.2  # Add small random variations
-                    next_price = last_price * (1 + trend) ** (i + 1) * random_factor
+                    # Calculate trend factor that evolves over time
+                    # For longer forecasts, trend reverts to the mean (becomes less extreme)
+                    days_factor = min(1.0, 1.0 - (i / (self.forecast_days * 2)))
+                    current_trend = trend * days_factor
+                    
+                    # Add random noise that increases with time
+                    noise_factor = min(0.7, 0.02 * (i + 1))  # Cap at 70% of volatility
+                    noise = np.random.normal(0, historical_volatility * noise_factor)
+                    
+                    # Calculate next price with trend and noise
+                    next_price = current_price * (1 + current_trend + noise)
+                    next_price = max(current_price * 0.5, next_price)  # Prevent unrealistic drops
+                    
                     future_prices.append(next_price)
+                    current_price = next_price  # Use this price for next iteration
                     
                     # Calculate the next date
                     next_date = current_date + timedelta(days=i+1)
@@ -532,10 +622,10 @@ class MLPredictor:
                     "price_change_percent": price_change_percent,
                     "prediction": prediction,
                     "confidence": confidence,
-                    "volatility": 1.0,  # Default value
+                    "volatility": historical_volatility * 100,  # Convert to percentage
                     "forecast_days": self.forecast_days,
-                    "model_type": "Simple Trend Follower (Fallback)",
-                    "features_used": ["price", "moving_averages"],
+                    "model_type": "Advanced Trend Analysis (Fallback)",
+                    "features_used": ["price", "moving_averages", "volatility"],
                     "is_fallback": True
                 }
                 
