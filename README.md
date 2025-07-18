@@ -35,16 +35,11 @@ A full-stack application for stock prediction and analysis using fundamental ana
 
 1. Clone the repository:
 ```
-git clone https://github.com/manasvohal/stockPredictorModel.git
-cd stockPredictorModel
+git clone https://github.com/manasvohal/stock-prediction-platform.git
+cd stock-prediction-platform
 ```
 
 2. Start the application with Docker Compose:
 ```
 docker-compose up -d
 ```
-
-3. Access the application:
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8000
-   - API Documentation: http://localhost:8000/docs
