@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/stockpredictor
+      - SECRET_KEY=your_secret_key_here
+      - ENVIRONMENT=development
+      - API_V1_STR=/api/v1
+      - PROJECT_NAME=Stock Predictor API
+      - ALPHA_VANTAGE_API_KEY=MA23H7ILWPCGWJVW
+      - NEWS_API_KEY=1c4aca4cbbbd432f8fe51396554604d2
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - db
+    restart: always
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000/api/v1
+    depends_on:
+      - backend
+    restart: always
+
+  db:
+    image: postgres:14
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=stockpredictor
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  postgres_data: 

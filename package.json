@@ -1,0 +1,13 @@
+{
+  "name": "apple-stock-display",
+  "version": "1.0.0",
+  "description": "Simple display for Apple stock ticker, price, and chart",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=12.0.0"
+  }
+} 

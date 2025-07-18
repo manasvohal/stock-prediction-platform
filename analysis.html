@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technical Analysis - Stock Predictor</title>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3a86ff;
+            --primary-dark: #2667cc;
+            --success: #38b000;
+            --danger: #d90429;
+            --dark: #212529;
+            --light: #f8f9fa;
+            --border-radius: 12px;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        .nav-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .nav-logo {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--dark);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .nav-logo:before {
+            content: '\f201';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            color: var(--primary);
+        }
+        
+        .nav-logo:hover {
+            color: var(--primary);
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 25px;
+        }
+        
+        .nav-link {
+            color: var(--dark);
+            text-decoration: none;
+            padding: 8px 0;
+            position: relative;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+        
+        .nav-link:hover {
+            color: var(--primary);
+        }
+        
+        .nav-link.active {
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .nav-link.active:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: var(--primary);
+            border-radius: 3px;
+        }
+        
+        .page-title {
+            font-size: 36px;
+            margin-bottom: 15px;
+            color: var(--dark);
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+            transition: var(--transition);
+        }
+        
+        .container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+        
+        .section-title {
+            font-size: 24px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            color: var(--dark);
+            font-weight: 600;
+        }
+        
+        .search-container {
+            display: flex;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 16px 20px;
+            font-size: 16px;
+            border: none;
+            outline: none;
+            background: white;
+        }
+        
+        .search-button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0 25px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .search-button:before {
+            content: '\f002';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+        }
+        
+        .search-button:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .chart-container {
+            height: 500px;
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.9);
+            z-index: 10;
+            border-radius: var(--border-radius);
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(58, 134, 255, 0.2);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .controls-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .timeframe-selector {
+            display: flex;
+            gap: 8px;
+            background-color: rgba(0,0,0,0.03);
+            padding: 4px;
+            border-radius: 8px;
+        }
+        
+        .timeframe-button {
+            padding: 8px 16px;
+            background-color: transparent;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .timeframe-button:hover {
+            background-color: rgba(0,0,0,0.05);
+        }
+        
+        .timeframe-button.active {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        #toggle-chart-type {
+            background-color: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        #toggle-chart-type:before {
+            content: '\f201';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+        }
+        
+        .indicators-container {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .indicators-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--dark);
+        }
+        
+        .indicators-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+        }
+        
+        .indicator-toggle {
+            display: flex;
+            align-items: center;
+        }
+        
+        .indicator-toggle input {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+        }
+        
+        .indicator-toggle label {
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        .indicator-settings {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: rgba(0,0,0,0.02);
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .indicator-settings.visible {
+            display: block;
+        }
+        
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .setting-item {
+            margin-bottom: 15px;
+        }
+        
+        .setting-label {
+            display: block;
+            font-size: 15px;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        .setting-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 8px;
+            font-size: 15px;
+            transition: var(--transition);
+        }
+        
+        .setting-input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.1);
+        }
+        
+        .comparison-container {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .comparison-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--dark);
+        }
+        
+        .comparison-form {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .comparison-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 8px;
+            font-size: 15px;
+            transition: var(--transition);
+        }
+        
+        .comparison-input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.1);
+        }
+        
+        .comparison-button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .comparison-button:before {
+            content: '\f067';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+        }
+        
+        .comparison-button:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .comparison-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 15px;
+        }
+        
+        .comparison-item {
+            background-color: rgba(0,0,0,0.03);
+            border-radius: 20px;
+            padding: 8px 15px;
+            font-size: 15px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .remove-comparison {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            transition: var(--transition);
+        }
+        
+        .remove-comparison:hover {
+            transform: scale(1.2);
+        }
+        
+        .stock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 25px;
+        }
+        
+        .stock-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .stock-name {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--dark);
+        }
+        
+        .stock-ticker {
+            font-size: 18px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .stock-price {
+            font-size: 28px;
+            font-weight: 700;
+            padding: 10px 20px;
+            background-color: rgba(0,0,0,0.03);
+            border-radius: var(--border-radius);
+        }
+        
+        .stock-change {
+            font-size: 18px;
+            text-align: center;
+            margin-top: 5px;
+            font-weight: 500;
+        }
+        
+        .positive {
+            color: var(--success);
+        }
+        
+        .negative {
+            color: var(--danger);
+        }
+        
+        /* Responsive styles */
+        @media (max-width: 992px) {
+            .settings-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .stock-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .stock-price {
+                align-self: flex-start;
+            }
+            
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .comparison-form {
+                flex-direction: column;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .nav-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .nav-links {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .page-title {
+                font-size: 28px;
+            }
+            
+            .controls-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .timeframe-selector {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .indicators-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-header">
+        <a href="/" class="nav-logo">Stock Predictor</a>
+        <div class="nav-links">
+            <a href="/" class="nav-link">Dashboard</a>
+            <a href="/portfolio.html" class="nav-link">Portfolio</a>
+            <a href="/analysis.html" class="nav-link active">Analysis</a>
+        </div>
+    </div>
+
+    <h1 class="page-title">Technical Analysis</h1>
+    <p class="subtitle">Advanced chart tools and technical indicators</p>
+
+    <div class="container">
+        <div class="search-container">
+            <input type="text" id="ticker-search" class="search-input" placeholder="Enter stock ticker (e.g., AAPL, MSFT, GOOGL)" value="AAPL">
+            <button id="search-button" class="search-button">Analyze</button>
+        </div>
+
+        <div class="stock-header">
+            <div class="stock-info">
+                <div class="stock-name" id="stock-name">Apple Inc.</div>
+                <div class="stock-ticker" id="stock-ticker">AAPL</div>
+            </div>
+            <div>
+                <div class="stock-price" id="stock-price">$0.00</div>
+                <div class="stock-change" id="stock-change">+$0.00 (0.00%)</div>
+            </div>
+        </div>
+
+        <div class="controls-container">
+            <div class="timeframe-selector">
+                <button class="timeframe-button" data-days="7">1W</button>
+                <button class="timeframe-button" data-days="30">1M</button>
+                <button class="timeframe-button active" data-days="90">3M</button>
+                <button class="timeframe-button" data-days="180">6M</button>
+                <button class="timeframe-button" data-days="365">1Y</button>
+            </div>
+            <div>
+                <button id="toggle-chart-type" class="timeframe-button">Toggle Chart Type</button>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="loading" id="chart-loading">
+                <div class="loading-spinner"></div>
+            </div>
+            <div id="chart"></div>
+        </div>
+        
+        <div class="indicators-container">
+            <h3 class="indicators-title">Technical Indicators</h3>
+            <div class="indicators-grid">
+                <div class="indicator-toggle">
+                    <input type="checkbox" id="toggle-ma" class="indicator-checkbox">
+                    <label for="toggle-ma">Moving Averages</label>
+                </div>
+                <div class="indicator-toggle">
+                    <input type="checkbox" id="toggle-bollinger" class="indicator-checkbox">
+                    <label for="toggle-bollinger">Bollinger Bands</label>
+                </div>
+                <div class="indicator-toggle">
+                    <input type="checkbox" id="toggle-rsi" class="indicator-checkbox">
+                    <label for="toggle-rsi">RSI</label>
+                </div>
+                <div class="indicator-toggle">
+                    <input type="checkbox" id="toggle-macd" class="indicator-checkbox">
+                    <label for="toggle-macd">MACD</label>
+                </div>
+                <div class="indicator-toggle">
+                    <input type="checkbox" id="toggle-volume" class="indicator-checkbox">
+                    <label for="toggle-volume">Volume</label>
+                </div>
+            </div>
+            
+            <div id="indicator-settings" class="indicator-settings">
+                <div class="settings-grid">
+                    <div class="setting-item">
+                        <label class="setting-label" for="ma-period-1">MA Period 1</label>
+                        <input type="number" id="ma-period-1" class="setting-input" value="20" min="1">
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label" for="ma-period-2">MA Period 2</label>
+                        <input type="number" id="ma-period-2" class="setting-input" value="50" min="1">
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label" for="ma-period-3">MA Period 3</label>
+                        <input type="number" id="ma-period-3" class="setting-input" value="200" min="1">
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label" for="bollinger-period">Bollinger Period</label>
+                        <input type="number" id="bollinger-period" class="setting-input" value="20" min="1">
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label" for="bollinger-std">Bollinger StdDev</label>
+                        <input type="number" id="bollinger-std" class="setting-input" value="2" min="0.1" step="0.1">
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label" for="rsi-period">RSI Period</label>
+                        <input type="number" id="rsi-period" class="setting-input" value="14" min="1">
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label" for="macd-fast">MACD Fast</label>
+                        <input type="number" id="macd-fast" class="setting-input" value="12" min="1">
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label" for="macd-slow">MACD Slow</label>
+                        <input type="number" id="macd-slow" class="setting-input" value="26" min="1">
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label" for="macd-signal">MACD Signal</label>
+                        <input type="number" id="macd-signal" class="setting-input" value="9" min="1">
+                    </div>
+                </div>
+                <div style="margin-top: 20px;">
+                    <button id="apply-indicators" class="comparison-button">Apply Indicators</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="comparison-container">
+            <h3 class="comparison-title">Compare Stocks</h3>
+            <div class="comparison-form">
+                <input type="text" id="comparison-ticker" class="comparison-input" placeholder="Enter ticker to compare (e.g., MSFT)">
+                <button id="add-comparison" class="comparison-button">Add</button>
+            </div>
+            <div id="comparison-list" class="comparison-list">
+                <!-- Comparison items will be added here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8001/api/v1';
+        let chart = null;
+        let currentTicker = 'AAPL';
+        let currentTimeframe = 90; // Default to 3 months
+
+        let chartType = 'candlestick';
+        let indicators = {
+            ma: false,
+            bollinger: false,
+            rsi: false,
+            macd: false,
+            volume: false
+        };
+        let comparisonStocks = [];
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+            loadStock(currentTicker, currentTimeframe);
+        });
+
+        function setupEventListeners() {
+            // Search button
+            document.getElementById('search-button').addEventListener('click', () => {
+                const ticker = document.getElementById('ticker-search').value.trim().toUpperCase();
+                if (ticker) {
+                    loadStock(ticker, currentTimeframe);
+                }
+            });
+
+            // Search input enter key
+            document.getElementById('ticker-search').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const ticker = document.getElementById('ticker-search').value.trim().toUpperCase();
+                    if (ticker) {
+                        loadStock(ticker, currentTimeframe);
+                    }
+                }
+            });
+
+            // Timeframe buttons
+            document.querySelectorAll('.timeframe-button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const days = parseInt(btn.dataset.days);
+                    if (!days) return; // Skip if not a timeframe button
+                    
+                    // Update active button
+                    document.querySelectorAll('.timeframe-button').forEach(b => {
+                        if (b.dataset.days) {
+                            b.classList.remove('active');
+                        }
+                    });
+                    btn.classList.add('active');
+                    
+                    // Update chart
+                    currentTimeframe = days;
+                    loadStock(currentTicker, currentTimeframe);
+                });
+            });
+            
+            // Toggle chart type
+            document.getElementById('toggle-chart-type').addEventListener('click', () => {
+                chartType = chartType === 'candlestick' ? 'line' : 'candlestick';
+                loadStock(currentTicker, currentTimeframe);
+            });
+            
+            // Indicator checkboxes
+            document.querySelectorAll('.indicator-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    const id = checkbox.id;
+                    if (id === 'toggle-ma') indicators.ma = checkbox.checked;
+                    if (id === 'toggle-bollinger') indicators.bollinger = checkbox.checked;
+                    if (id === 'toggle-rsi') indicators.rsi = checkbox.checked;
+                    if (id === 'toggle-macd') indicators.macd = checkbox.checked;
+                    if (id === 'toggle-volume') indicators.volume = checkbox.checked;
+                    
+                    // Show settings if any indicator is checked
+                    const anyChecked = Object.values(indicators).some(val => val);
+                    document.getElementById('indicator-settings').classList.toggle('visible', anyChecked);
+                });
+            });
+            
+            // Apply indicators button
+            document.getElementById('apply-indicators').addEventListener('click', () => {
+                loadStock(currentTicker, currentTimeframe);
+            });
+            
+            // Add comparison
+            document.getElementById('add-comparison').addEventListener('click', () => {
+                addComparisonStock();
+            });
+            
+            // Comparison input enter key
+            document.getElementById('comparison-ticker').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    addComparisonStock();
+                }
+            });
+        }
+        
+        async function addComparisonStock() {
+            const ticker = document.getElementById('comparison-ticker').value.trim().toUpperCase();
+            if (!ticker || ticker === currentTicker || comparisonStocks.includes(ticker)) {
+                return;
+            }
+            
+            try {
+                // Check if stock exists
+                const stockInfo = await fetchStockInfo(ticker);
+                if (!stockInfo) {
+                    alert(`Could not find stock with ticker: ${ticker}`);
+                    return;
+                }
+                
+                // Add to comparison list
+                comparisonStocks.push(ticker);
+                
+                // Add to UI
+                const comparisonList = document.getElementById('comparison-list');
+                const item = document.createElement('div');
+                item.className = 'comparison-item';
+                item.innerHTML = `
+                    ${ticker}
+                    <button class="remove-comparison" data-ticker="${ticker}">×</button>
+                `;
+                comparisonList.appendChild(item);
+                
+                // Add remove event
+                item.querySelector('.remove-comparison').addEventListener('click', (e) => {
+                    const tickerToRemove = e.target.dataset.ticker;
+                    comparisonStocks = comparisonStocks.filter(t => t !== tickerToRemove);
+                    item.remove();
+                    loadStock(currentTicker, currentTimeframe);
+                });
+                
+                // Clear input
+                document.getElementById('comparison-ticker').value = '';
+                
+                // Update chart
+                loadStock(currentTicker, currentTimeframe);
+                
+            } catch (error) {
+                console.error('Error adding comparison stock:', error);
+            }
+        }
+
+        async function loadStock(ticker, days) {
+            currentTicker = ticker;
+            document.getElementById('chart-loading').style.display = 'flex';
+            
+            try {
+                // Fetch stock info
+                const stockInfo = await fetchStockInfo(ticker);
+                if (!stockInfo) {
+                    alert(`Could not find stock with ticker: ${ticker}`);
+                    document.getElementById('chart-loading').style.display = 'none';
+                    return;
+                }
+                
+                // Update stock info display
+                document.getElementById('stock-name').textContent = stockInfo.company_name || ticker;
+                document.getElementById('stock-ticker').textContent = ticker;
+                document.getElementById('stock-price').textContent = `$${stockInfo.current_price.toFixed(2)}`;
+                
+                // Fetch chart data
+                const chartData = await fetchStockChart(ticker);
+                if (!chartData || chartData.length === 0) {
+                    alert(`Could not load chart data for: ${ticker}`);
+                    document.getElementById('chart-loading').style.display = 'none';
+                    return;
+                }
+                
+                // Process chart data
+                const processedData = processChartData(chartData, days);
+                
+                // Fetch comparison data if needed
+                const comparisonData = [];
+                if (comparisonStocks.length > 0) {
+                    for (const compTicker of comparisonStocks) {
+                        try {
+                            const compChartData = await fetchStockChart(compTicker);
+                            if (compChartData && compChartData.length > 0) {
+                                const processedCompData = processChartData(compChartData, days);
+                                comparisonData.push({
+                                    ticker: compTicker,
+                                    data: processedCompData
+                                });
+                            }
+                        } catch (error) {
+                            console.error(`Error fetching comparison data for ${compTicker}:`, error);
+                        }
+                    }
+                }
+                
+                // Create chart
+                createChart(processedData, comparisonData);
+                
+                // Update price change
+                if (processedData.length > 1) {
+                    const firstPoint = processedData[0];
+                    const lastPoint = processedData[processedData.length - 1];
+                    const priceChange = lastPoint.y - firstPoint.y;
+                    const priceChangePercent = (priceChange / firstPoint.y) * 100;
+                    
+                    const changeElement = document.getElementById('stock-change');
+                    const sign = priceChange >= 0 ? '+' : '';
+                    changeElement.textContent = `${sign}$${priceChange.toFixed(2)} (${sign}${priceChangePercent.toFixed(2)}%)`;
+                    changeElement.className = `stock-change ${priceChange >= 0 ? 'positive' : 'negative'}`;
+                }
+                
+            } catch (error) {
+                console.error('Error loading stock:', error);
+                alert('Error loading stock data. Please try again.');
+            }
+            
+            document.getElementById('chart-loading').style.display = 'none';
+        }
+
+        async function fetchStockInfo(ticker) {
+            try {
+                const response = await fetch(`${API_URL}/stocks/${ticker}`);
+                if (!response.ok) {
+                    return null;
+                }
+                return await response.json();
+            } catch (error) {
+                console.error(`Error fetching stock info for ${ticker}:`, error);
+                return null;
+            }
+        }
+
+        async function fetchStockChart(ticker) {
+            try {
+                const response = await fetch(`${API_URL}/stocks/${ticker}/chart`);
+                if (!response.ok) {
+                    return null;
+                }
+                const data = await response.json();
+                return data.data || data;
+            } catch (error) {
+                console.error(`Error fetching chart data for ${ticker}:`, error);
+                return null;
+            }
+        }
+
+        function processChartData(chartData, days) {
+            // Get data from the specified timeframe
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - days);
+            
+            const filteredData = chartData.filter(item => new Date(item.date) >= cutoffDate);
+            
+            return filteredData.map(item => ({
+                x: new Date(item.date).getTime(),
+                y: item.close,
+                open: item.open,
+                high: item.high,
+                low: item.low,
+                close: item.close,
+                volume: item.volume
+            }));
+        }
+
+        function createChart(data, comparisonData = []) {
+            const series = [{
+                name: currentTicker,
+                type: chartType,
+                data: data
+            }];
+            
+            // Add comparison series
+            comparisonData.forEach(comp => {
+                series.push({
+                    name: comp.ticker,
+                    type: 'line',
+                    data: comp.data.map(item => ({
+                        x: item.x,
+                        y: item.y
+                    }))
+                });
+            });
+            
+            // Add indicators if enabled
+            if (indicators.ma) {
+                const periods = [
+                    parseInt(document.getElementById('ma-period-1').value) || 20,
+                    parseInt(document.getElementById('ma-period-2').value) || 50,
+                    parseInt(document.getElementById('ma-period-3').value) || 200
+                ];
+                
+                periods.forEach(period => {
+                    const maData = calculateMA(data, period);
+                    if (maData.length > 0) {
+                        series.push({
+                            name: `MA(${period})`,
+                            type: 'line',
+                            data: maData,
+                            color: getMAColor(period)
+                        });
+                    }
+                });
+            }
+            
+            if (indicators.bollinger) {
+                const period = parseInt(document.getElementById('bollinger-period').value) || 20;
+                const stdDev = parseFloat(document.getElementById('bollinger-std').value) || 2;
+                
+                const { upper, lower } = calculateBollingerBands(data, period, stdDev);
+                
+                if (upper.length > 0 && lower.length > 0) {
+                    series.push({
+                        name: 'Upper Bollinger',
+                        type: 'line',
+                        data: upper,
+                        color: '#ff9500',
+                        dashArray: 3
+                    });
+                    
+                    series.push({
+                        name: 'Lower Bollinger',
+                        type: 'line',
+                        data: lower,
+                        color: '#ff9500',
+                        dashArray: 3
+                    });
+                }
+            }
+            
+            const options = {
+                series: series,
+                chart: {
+                    type: 'line',
+                    height: 500,
+                    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
+                    toolbar: {
+                        show: true,
+                        tools: {
+                            download: true,
+                            selection: true,
+                            zoom: true,
+                            zoomin: true,
+                            zoomout: true,
+                            pan: true,
+                            reset: true
+                        }
+                    }
+                },
+                xaxis: {
+                    type: 'datetime',
+                    labels: {
+                        datetimeFormatter: {
+                            year: 'yyyy',
+                            month: "MMM 'yy",
+                            day: 'dd MMM'
+                        }
+                    }
+                },
+                yaxis: {
+                    tooltip: {
+                        enabled: true
+                    },
+                    labels: {
+                        formatter: function(val) {
+                            return '$' + val.toFixed(2);
+                        }
+                    }
+                },
+                tooltip: {
+                    x: {
+                        format: 'MMM dd, yyyy'
+                    }
+                },
+                plotOptions: {
+                    candlestick: {
+                        colors: {
+                            upward: '#34c759',
+                            downward: '#ff3b30'
+                        }
+                    }
+                },
+                stroke: {
+                    width: chartType === 'candlestick' ? 1 : 2,
+                    curve: 'smooth'
+                },
+                legend: {
+                    show: true,
+                    position: 'top'
+                }
+            };
+            
+            // Add RSI if enabled
+            if (indicators.rsi) {
+                const period = parseInt(document.getElementById('rsi-period').value) || 14;
+                const rsiData = calculateRSI(data, period);
+                
+                if (rsiData.length > 0) {
+                    // Create a new chart for RSI
+                    options.chart.id = 'main-chart';
+                    options.chart.group = 'stock-analysis';
+                    
+                    if (chart) {
+                        chart.destroy();
+                    }
+                    
+                    chart = new ApexCharts(document.querySelector("#chart"), options);
+                    chart.render();
+                    
+                    // Create RSI chart below the main chart
+                    const rsiOptions = {
+                        series: [{
+                            name: `RSI(${period})`,
+                            data: rsiData
+                        }],
+                        chart: {
+                            type: 'line',
+                            height: 150,
+                            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
+                            toolbar: {
+                                show: false
+                            },
+                            id: 'rsi-chart',
+                            group: 'stock-analysis'
+                        },
+                        xaxis: {
+                            type: 'datetime',
+                            labels: {
+                                datetimeFormatter: {
+                                    year: 'yyyy',
+                                    month: "MMM 'yy",
+                                    day: 'dd MMM'
+                                }
+                            }
+                        },
+                        yaxis: {
+                            min: 0,
+                            max: 100,
+                            tickAmount: 5,
+                            labels: {
+                                formatter: function(val) {
+                                    return val.toFixed(0);
+                                }
+                            }
+                        },
+                        stroke: {
+                            width: 2,
+                            curve: 'smooth'
+                        },
+                        colors: ['#5856d6'],
+                        annotations: {
+                            yaxis: [
+                                {
+                                    y: 70,
+                                    borderColor: '#ff3b30',
+                                    label: {
+                                        text: 'Overbought',
+                                        style: {
+                                            color: '#fff',
+                                            background: '#ff3b30'
+                                        }
+                                    }
+                                },
+                                {
+                                    y: 30,
+                                    borderColor: '#34c759',
+                                    label: {
+                                        text: 'Oversold',
+                                        style: {
+                                            color: '#fff',
+                                            background: '#34c759'
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    };
+                    
+                    // Create RSI chart div
+                    const rsiDiv = document.createElement('div');
+                    rsiDiv.id = 'rsi-chart-container';
+                    rsiDiv.style.marginTop = '20px';
+                    rsiDiv.style.height = '150px';
+                    
+                    // Add it after the main chart
+                    document.querySelector('#chart').insertAdjacentElement('afterend', rsiDiv);
+                    
+                    // Render RSI chart
+                    const rsiChart = new ApexCharts(rsiDiv, rsiOptions);
+                    rsiChart.render();
+                    
+                    return;
+                }
+            }
+            
+            // If we didn't create an RSI chart, create the main chart
+            if (chart) {
+                chart.destroy();
+            }
+            
+            chart = new ApexCharts(document.querySelector("#chart"), options);
+            chart.render();
+        }
+        
+        // Technical indicator calculations
+        function calculateMA(data, period) {
+            if (data.length < period) return [];
+            
+            const result = [];
+            for (let i = period - 1; i < data.length; i++) {
+                let sum = 0;
+                for (let j = 0; j < period; j++) {
+                    sum += data[i - j].y;
+                }
+                const ma = sum / period;
+                result.push({
+                    x: data[i].x,
+                    y: ma
+                });
+            }
+            
+            return result;
+        }
+        
+        function calculateBollingerBands(data, period, stdDev) {
+            if (data.length < period) return { upper: [], lower: [] };
+            
+            const upper = [];
+            const lower = [];
+            
+            for (let i = period - 1; i < data.length; i++) {
+                let sum = 0;
+                let sumSq = 0;
+                
+                for (let j = 0; j < period; j++) {
+                    sum += data[i - j].y;
+                    sumSq += data[i - j].y * data[i - j].y;
+                }
+                
+                const ma = sum / period;
+                const variance = sumSq / period - ma * ma;
+                const sd = Math.sqrt(variance);
+                
+                upper.push({
+                    x: data[i].x,
+                    y: ma + stdDev * sd
+                });
+                
+                lower.push({
+                    x: data[i].x,
+                    y: ma - stdDev * sd
+                });
+            }
+            
+            return { upper, lower };
+        }
+        
+        function calculateRSI(data, period) {
+            if (data.length < period + 1) return [];
+            
+            const result = [];
+            let gains = 0;
+            let losses = 0;
+            
+            // Calculate initial avg gain/loss
+            for (let i = 1; i <= period; i++) {
+                const change = data[i].y - data[i - 1].y;
+                if (change >= 0) {
+                    gains += change;
+                } else {
+                    losses += Math.abs(change);
+                }
+            }
+            
+            let avgGain = gains / period;
+            let avgLoss = losses / period;
+            
+            // Calculate RSI for first period
+            let rs = avgGain / (avgLoss === 0 ? 0.001 : avgLoss); // Avoid division by zero
+            let rsi = 100 - (100 / (1 + rs));
+            
+            result.push({
+                x: data[period].x,
+                y: rsi
+            });
+            
+            // Calculate RSI for remaining periods
+            for (let i = period + 1; i < data.length; i++) {
+                const change = data[i].y - data[i - 1].y;
+                let currentGain = 0;
+                let currentLoss = 0;
+                
+                if (change >= 0) {
+                    currentGain = change;
+                } else {
+                    currentLoss = Math.abs(change);
+                }
+                
+                // Use smoothed averages
+                avgGain = ((avgGain * (period - 1)) + currentGain) / period;
+                avgLoss = ((avgLoss * (period - 1)) + currentLoss) / period;
+                
+                rs = avgGain / (avgLoss === 0 ? 0.001 : avgLoss);
+                rsi = 100 - (100 / (1 + rs));
+                
+                result.push({
+                    x: data[i].x,
+                    y: rsi
+                });
+            }
+            
+            return result;
+        }
+        
+        function getMAColor(period) {
+            // Return different colors based on MA period
+            switch (period) {
+                case 20:
+                    return '#5ac8fa';
+                case 50:
+                    return '#af52de';
+                case 200:
+                    return '#ff9500';
+                default:
+                    return '#0071e3';
+            }
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Predictor Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3a86ff;
+            --primary-dark: #2667cc;
+            --success: #38b000;
+            --danger: #d90429;
+            --dark: #212529;
+            --light: #f8f9fa;
+            --border-radius: 12px;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .nav-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .nav-logo {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--dark);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .nav-logo:before {
+            content: '\f201';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            color: var(--primary);
+        }
+        
+        .nav-logo:hover {
+            color: var(--primary);
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 25px;
+        }
+        
+        .nav-link {
+            color: var(--dark);
+            text-decoration: none;
+            padding: 8px 0;
+            position: relative;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+        
+        .nav-link:hover {
+            color: var(--primary);
+        }
+        
+        .nav-link.active {
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .nav-link.active:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: var(--primary);
+            border-radius: 3px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px 0 50px;
+        }
+        
+        h1 {
+            font-size: 42px;
+            margin-bottom: 15px;
+            color: var(--dark);
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 40px;
+        }
+        
+        .search-container {
+            max-width: 700px;
+            margin: 0 auto 40px;
+            position: relative;
+            box-shadow: var(--shadow);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 18px 20px;
+            font-size: 18px;
+            border: none;
+            outline: none;
+            transition: var(--transition);
+        }
+        
+        .search-button {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .search-button:before {
+            content: '\f002';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+        }
+        
+        .search-button:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .popular-stocks {
+            margin-bottom: 50px;
+        }
+        
+        .section-title {
+            font-size: 28px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            color: var(--dark);
+            font-weight: 600;
+        }
+        
+        .stocks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+        }
+        
+        .stock-card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        
+        .stock-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+        
+        .stock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        
+        .stock-name {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .stock-ticker {
+            color: #666;
+            font-size: 15px;
+        }
+        
+        .stock-price {
+            font-size: 26px;
+            font-weight: 700;
+        }
+        
+        .stock-change {
+            display: flex;
+            align-items: center;
+            font-size: 15px;
+            margin-top: 5px;
+            font-weight: 500;
+        }
+        
+        .positive {
+            color: var(--success);
+        }
+        
+        .negative {
+            color: var(--danger);
+        }
+        
+        .mini-chart {
+            height: 70px;
+            margin-top: 20px;
+        }
+        
+        .market-news {
+            margin-bottom: 50px;
+        }
+        
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+        }
+        
+        .news-card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .news-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+        
+        .news-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        .news-content {
+            padding: 25px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .news-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+        
+        .news-source {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .news-source:before {
+            content: '\f1ea';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            color: var(--primary);
+        }
+        
+        .news-description {
+            font-size: 15px;
+            color: #555;
+            line-height: 1.6;
+            flex: 1;
+        }
+        
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 50px;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(58, 134, 255, 0.2);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            font-size: 14px;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            margin-top: 50px;
+        }
+        
+        /* Responsive styles */
+        @media (max-width: 992px) {
+            .stocks-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .news-grid {
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            }
+            
+            h1 {
+                font-size: 36px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .nav-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .nav-links {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            h1 {
+                font-size: 30px;
+            }
+            
+            .search-button {
+                padding: 8px 15px;
+            }
+            
+            .stocks-grid, .news-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="nav-header">
+            <a href="/" class="nav-logo">Stock Predictor</a>
+            <div class="nav-links">
+                <a href="/" class="nav-link active">Dashboard</a>
+                <a href="/portfolio.html" class="nav-link">Portfolio</a>
+                <a href="/analysis.html" class="nav-link">Analysis</a>
+            </div>
+        </div>
+        
+        <header>
+            <h1>Stock Predictor Dashboard</h1>
+            <p class="subtitle">Real-time stock data with AI-powered analysis and predictions</p>
+            <div class="search-container">
+                <input type="text" id="stock-search" class="search-input" placeholder="Search for a stock (e.g., AAPL, MSFT, GOOGL)">
+                <button id="search-button" class="search-button">Search</button>
+            </div>
+        </header>
+
+        <section class="popular-stocks">
+            <h2 class="section-title">Popular Stocks</h2>
+            <div id="popular-stocks-loading" class="loading">
+                <div class="loading-spinner"></div>
+            </div>
+            <div class="stocks-grid" id="popular-stocks-grid">
+                <!-- Stock cards will be inserted here dynamically -->
+            </div>
+        </section>
+
+        <section class="market-news">
+            <h2 class="section-title">Market News</h2>
+            <div id="market-news-loading" class="loading">
+                <div class="loading-spinner"></div>
+            </div>
+            <div class="news-grid" id="news-grid">
+                <!-- News cards will be inserted here dynamically -->
+            </div>
+        </section>
+
+        <footer>
+            &copy; 2023 Stock Predictor. All data is for informational purposes only.
+        </footer>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8001/api/v1';
+        const NEWS_API_KEY = '1c4aca4cbbbd432f8fe51396554604d2';
+        const popularTickers = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'TSLA', 'NVDA', 'JPM'];
+        
+        // Initialize charts for mini stock charts
+        const chartOptions = {
+            chart: {
+                type: 'line',
+                height: 60,
+                sparkline: {
+                    enabled: true
+                },
+                animations: {
+                    enabled: false
+                }
+            },
+            stroke: {
+                width: 2,
+                curve: 'smooth'
+            },
+            tooltip: {
+                fixed: {
+                    enabled: false
+                },
+                x: {
+                    show: false
+                },
+                y: {
+                    formatter: function(value) {
+                        return '$' + value.toFixed(2);
+                    }
+                },
+                marker: {
+                    show: false
+                }
+            }
+        };
+
+        async function fetchStockInfo(ticker) {
+            try {
+                console.log(`Fetching stock info for ${ticker}...`);
+                const response = await fetch(`${API_URL}/stocks/${ticker}`);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`Error response for ${ticker}: Status ${response.status}, ${errorText}`);
+                    throw new Error(`Stock not found: ${ticker} (Status: ${response.status})`);
+                }
+                
+                const data = await response.json();
+                console.log(`Stock info received for ${ticker}:`, data);
+                return data;
+            } catch (error) {
+                console.error(`Error fetching stock info for ${ticker}:`, error);
+                return null;
+            }
+        }
+
+        async function fetchStockChart(ticker, days = 30) {
+            try {
+                console.log(`Fetching chart data for ${ticker}...`);
+                const response = await fetch(`${API_URL}/stocks/${ticker}/chart`);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`Error response for ${ticker} chart: Status ${response.status}, ${errorText}`);
+                    throw new Error(`Chart data not found for: ${ticker} (Status: ${response.status})`);
+                }
+                
+                const data = await response.json();
+                console.log(`Chart data received for ${ticker}:`, data);
+                const chartData = data.data || data;
+                
+                if (!chartData || !Array.isArray(chartData) || chartData.length === 0) {
+                    console.error(`Invalid chart data format for ${ticker}:`, data);
+                    return null;
+                }
+                
+                // Get data from the specified timeframe
+                const cutoffDate = new Date();
+                cutoffDate.setDate(cutoffDate.getDate() - days);
+                
+                const filteredData = chartData.filter(item => new Date(item.date) >= cutoffDate);
+                
+                if (filteredData.length === 0) {
+                    console.error(`No chart data within timeframe for ${ticker}`);
+                    return null;
+                }
+                
+                // Calculate price change
+                if (filteredData.length > 1) {
+                    const firstPrice = filteredData[0].close;
+                    const lastPrice = filteredData[filteredData.length - 1].close;
+                    const priceChange = lastPrice - firstPrice;
+                    const priceChangePercent = (priceChange / firstPrice) * 100;
+                    
+                    // Add price change to the last data point
+                    filteredData[filteredData.length - 1].priceChange = priceChange;
+                    filteredData[filteredData.length - 1].priceChangePercent = priceChangePercent;
+                }
+                
+                return filteredData.map(item => ({
+                    x: new Date(item.date).getTime(),
+                    y: item.close,
+                    priceChange: item.priceChange,
+                    priceChangePercent: item.priceChangePercent
+                }));
+            } catch (error) {
+                console.error(`Error fetching chart data for ${ticker}:`, error);
+                return null;
+            }
+        }
+
+        async function fetchMarketNews() {
+            try {
+                // First try to get news from our API
+                try {
+                    const response = await fetch(`${API_URL}/news/market`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        return data.articles || [];
+                    }
+                } catch (e) {
+                    console.log('Could not fetch news from internal API, trying NewsAPI');
+                }
+                
+                // Fallback to NewsAPI
+                const response = await fetch(`https://newsapi.org/v2/top-headlines?category=business&language=en&apiKey=${NEWS_API_KEY}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch market news');
+                }
+                const data = await response.json();
+                return data.articles || [];
+            } catch (error) {
+                console.error('Error fetching market news:', error);
+                return [];
+            }
+        }
+
+        function createStockCard(stock, chartData) {
+            const card = document.createElement('div');
+            card.className = 'stock-card';
+            card.setAttribute('data-ticker', stock.ticker);
+            
+            // Get price change from chart data if available
+            let priceChange = 0;
+            let priceChangePercent = 0;
+            
+            if (chartData && chartData.length > 1) {
+                const lastPoint = chartData[chartData.length - 1];
+                if (lastPoint.priceChange !== undefined) {
+                    priceChange = lastPoint.priceChange;
+                    priceChangePercent = lastPoint.priceChangePercent;
+                } else {
+                    // Calculate from the first and last points
+                    const firstPoint = chartData[0];
+                    priceChange = lastPoint.y - firstPoint.y;
+                    priceChangePercent = (priceChange / firstPoint.y) * 100;
+                }
+            }
+            
+            const changeClass = priceChange >= 0 ? 'positive' : 'negative';
+            const changeSign = priceChange >= 0 ? '+' : '';
+            
+            card.innerHTML = `
+                <div class="stock-header">
+                    <div>
+                        <div class="stock-name">${stock.company_name || stock.ticker}</div>
+                        <div class="stock-ticker">${stock.ticker}</div>
+                    </div>
+                    <div>
+                        <div class="stock-price">$${stock.current_price.toFixed(2)}</div>
+                        <div class="stock-change ${changeClass}">
+                            ${changeSign}${Math.abs(priceChange).toFixed(2)} (${changeSign}${Math.abs(priceChangePercent).toFixed(2)}%)
+                        </div>
+                    </div>
+                </div>
+                <div class="mini-chart" id="chart-${stock.ticker}"></div>
+            `;
+            
+            card.addEventListener('click', () => {
+                window.location.href = `index.html?ticker=${stock.ticker}`;
+            });
+            
+            return card;
+        }
+
+        function createNewsCard(article) {
+            const card = document.createElement('div');
+            card.className = 'news-card';
+            
+            const imageUrl = article.urlToImage || article.image_url || 'https://via.placeholder.com/350x180?text=No+Image';
+            const title = article.title || 'No title available';
+            const source = article.source?.name || article.source || 'Unknown Source';
+            const description = article.description || 'No description available';
+            const url = article.url || '#';
+            const date = article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : 'Unknown date';
+            
+            card.innerHTML = `
+                <img src="${imageUrl}" alt="${title}" class="news-image" onerror="this.src='https://via.placeholder.com/350x180?text=No+Image'">
+                <div class="news-content">
+                    <div class="news-title">${title}</div>
+                    <div class="news-source">${source} • ${date}</div>
+                    <div class="news-description">${description}</div>
+                </div>
+            `;
+            
+            card.addEventListener('click', () => {
+                window.open(url, '_blank');
+            });
+            
+            return card;
+        }
+
+        async function renderPopularStocks() {
+            const stocksGrid = document.getElementById('popular-stocks-grid');
+            stocksGrid.innerHTML = '';
+            document.getElementById('popular-stocks-loading').style.display = 'flex';
+            
+            console.log('Fetching data for popular tickers:', popularTickers);
+            
+            // Fetch stocks one by one instead of using Promise.all
+            // This way if one fails, the others can still load
+            const validStocks = [];
+            
+            for (const ticker of popularTickers) {
+                try {
+                    console.log(`Fetching stock info for ${ticker}...`);
+                    const stock = await fetchStockInfo(ticker);
+                    
+                    if (stock) {
+                        console.log(`Successfully fetched stock info for ${ticker}:`, stock);
+                        validStocks.push(stock);
+                    } else {
+                        console.log(`Failed to fetch stock info for ${ticker}`);
+                    }
+                } catch (error) {
+                    console.error(`Error processing ${ticker}:`, error);
+                }
+            }
+            
+            console.log(`Found ${validStocks.length} valid stocks:`, validStocks.map(s => s.ticker));
+            
+            for (const stock of validStocks) {
+                try {
+                    console.log(`Fetching chart data for ${stock.ticker}...`);
+                    const chartData = await fetchStockChart(stock.ticker, 30);
+                    
+                    if (chartData && chartData.length > 0) {
+                        console.log(`Successfully fetched chart data for ${stock.ticker} with ${chartData.length} points`);
+                        const card = createStockCard(stock, chartData);
+                        stocksGrid.appendChild(card);
+                        
+                        // Create mini chart
+                        const chartOptions = {
+                            series: [{
+                                name: stock.ticker,
+                                data: chartData
+                            }],
+                            chart: {
+                                type: 'line',
+                                height: 60,
+                                sparkline: {
+                                    enabled: true
+                                },
+                                animations: {
+                                    enabled: false
+                                }
+                            },
+                            stroke: {
+                                width: 2,
+                                curve: 'smooth',
+                                colors: [chartData[chartData.length - 1].priceChange >= 0 ? '#34c759' : '#ff3b30']
+                            },
+                            tooltip: {
+                                fixed: {
+                                    enabled: false
+                                },
+                                x: {
+                                    show: false
+                                },
+                                y: {
+                                    formatter: function(value) {
+                                        return '$' + value.toFixed(2);
+                                    }
+                                },
+                                marker: {
+                                    show: false
+                                }
+                            }
+                        };
+                        
+                        new ApexCharts(document.getElementById(`chart-${stock.ticker}`), chartOptions).render();
+                    } else {
+                        console.log(`Failed to fetch chart data for ${stock.ticker}`);
+                    }
+                } catch (error) {
+                    console.error(`Error rendering ${stock.ticker}:`, error);
+                }
+            }
+            
+            if (validStocks.length === 0) {
+                stocksGrid.innerHTML = '<p>No stock data available at this time.</p>';
+            }
+            
+            document.getElementById('popular-stocks-loading').style.display = 'none';
+        }
+
+        async function renderMarketNews() {
+            const newsGrid = document.getElementById('news-grid');
+            newsGrid.innerHTML = '';
+            document.getElementById('market-news-loading').style.display = 'flex';
+            
+            const articles = await fetchMarketNews();
+            
+            if (articles.length > 0) {
+                // Display up to 6 news articles
+                const displayArticles = articles.slice(0, 6);
+                
+                displayArticles.forEach(article => {
+                    const card = createNewsCard(article);
+                    newsGrid.appendChild(card);
+                });
+            } else {
+                newsGrid.innerHTML = '<p>No market news available at this time.</p>';
+            }
+            
+            document.getElementById('market-news-loading').style.display = 'none';
+        }
+
+        function setupSearch() {
+            const searchInput = document.getElementById('stock-search');
+            const searchButton = document.getElementById('search-button');
+            
+            searchButton.addEventListener('click', () => {
+                const ticker = searchInput.value.trim().toUpperCase();
+                if (ticker) {
+                    window.location.href = `index.html?ticker=${ticker}`;
+                }
+            });
+            
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const ticker = searchInput.value.trim().toUpperCase();
+                    if (ticker) {
+                        window.location.href = `index.html?ticker=${ticker}`;
+                    }
+                }
+            });
+        }
+
+        // Initialize the dashboard
+        async function initDashboard() {
+            setupSearch();
+            await Promise.all([
+                renderPopularStocks(),
+                renderMarketNews()
+            ]);
+        }
+
+        // Start the app
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html> 
